@@ -7,11 +7,11 @@ use crate::utils::{
     scraper::{parse_to, selector, text_content},
 };
 
-const PATTERN_COMMENT_TIME: &'static str = r"Posted on (.+) by:";
-const PATTERN_COMMENT_ID: &'static str = r"comment_score_(\d+)";
-const PATTERN_COMMENT_VOTE_BASE: &'static str = r"Base ([\+\-]?\d+)";
-const PATTERN_COMMENT_VOTE: &'static str = r"(?<user>.+) (?<score>[\+\-]?\d+)$";
-const PATTERN_COMMENT_VOTE_MORE: &'static str = r"and (\d+) more...";
+const PATTERN_COMMENT_TIME: &str = r"Posted on (.+) by:";
+const PATTERN_COMMENT_ID: &str = r"comment_score_(\d+)";
+const PATTERN_COMMENT_VOTE_BASE: &str = r"Base ([\+\-]?\d+)";
+const PATTERN_COMMENT_VOTE: &str = r"(?<user>.+) (?<score>[\+\-]?\d+)$";
+const PATTERN_COMMENT_VOTE_MORE: &str = r"and (\d+) more...";
 
 /// 画廊评论
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,7 +43,7 @@ pub struct GalleryComment {
 }
 
 /// 画廊评论投票状态
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GalleryCommentVoteState {
     pub base: i64,
     pub votes: Vec<GalleryCommentVote>,
@@ -59,11 +59,13 @@ pub struct GalleryCommentVote {
 
 impl GalleryCommentVoteState {
     pub fn new() -> Self {
-        GalleryCommentVoteState {
-            base: 0,
-            votes: vec![],
-            more: 0,
-        }
+        Self::default()
+    }
+}
+
+impl Default for GalleryComment {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -132,84 +134,72 @@ impl GalleryComment {
                 }
                 // 解析评论分数
                 let s = selector(r#"span[id^="comment_score_"]"#)?;
-                match c1.select(&s).next() {
-                    Some(comment_score) => {
-                        let text = comment_score.attr("id");
-                        if let Some(text) = text {
-                            match r_comment_id.captures(&text) {
-                                Some(caps) => {
-                                    gc.id = Some(parse_to::<i64>(&caps[1])?);
-                                }
-                                None => {
-                                    return Err(format!(
-                                        "Failed to parse comment: {}",
-                                        "Invalid comment id."
-                                    ));
-                                }
+                if let Some(comment_score) = c1.select(&s).next() {
+                    let text = comment_score.attr("id");
+                    if let Some(text) = text {
+                        match r_comment_id.captures(text) {
+                            Some(caps) => {
+                                gc.id = Some(parse_to::<i64>(&caps[1])?);
+                            }
+                            None => {
+                                return Err(format!(
+                                    "Failed to parse comment: {}",
+                                    "Invalid comment id."
+                                ));
                             }
                         }
-                        let text = text_content(comment_score.text());
-                        gc.score = parse_to::<i64>(&text)?;
                     }
-                    None => {}
+                    let text = text_content(comment_score.text());
+                    gc.score = parse_to::<i64>(&text)?;
                 }
                 // 解析评论内容
                 let s = selector(r#"div.c6[id^="comment_""#)?;
-                match c1.select(&s).next() {
-                    Some(c6) => {
-                        let text = c6.inner_html().trim().to_string();
-                        gc.comment = text;
-                    }
-                    None => {}
+                if let Some(c6) = c1.select(&s).next() {
+                    let text = c6.inner_html().trim().to_string();
+                    gc.comment = text;
                 }
                 // 解析评论评分情况
                 let s = selector(r#"div.c7[id^="cvotes_""#)?;
-                match c1.select(&s).next() {
-                    Some(c7) => {
-                        let mut c7text = c7.text();
-                        if let Some(base) = c7text.next() {
-                            match r_comment_vote_base.captures(&base) {
+                if let Some(c7) = c1.select(&s).next() {
+                    let mut c7text = c7.text();
+                    if let Some(base) = c7text.next() {
+                        match r_comment_vote_base.captures(base) {
+                            Some(caps) => {
+                                let score = parse_to::<i64>(&caps[1])?;
+                                gc.vote_state.base = score;
+                            }
+                            None => {
+                                return Err(format!(
+                                    "Failed to parse comment vote: {}",
+                                    "Invalid comment vote base."
+                                ));
+                            }
+                        }
+                        let s = selector("span")?;
+                        for vote in c7.select(&s) {
+                            let text = text_content(vote.text());
+                            match r_comment_vote.captures(text.trim()) {
                                 Some(caps) => {
-                                    let score = parse_to::<i64>(&caps[1])?;
-                                    gc.vote_state.base = score;
+                                    let user = caps[1].to_string();
+                                    let score = parse_to::<i64>(&caps[2])?;
+                                    let vote = GalleryCommentVote { user, score };
+                                    gc.vote_state.votes.push(vote);
                                 }
                                 None => {
                                     return Err(format!(
                                         "Failed to parse comment vote: {}",
-                                        "Invalid comment vote base."
+                                        "Invalid comment vote."
                                     ));
                                 }
                             }
-                            let s = selector("span")?;
-                            for vote in c7.select(&s) {
-                                let text = text_content(vote.text());
-                                match r_comment_vote.captures(text.trim()) {
-                                    Some(caps) => {
-                                        let user = caps[1].to_string();
-                                        let score = parse_to::<i64>(&caps[2])?;
-                                        let vote = GalleryCommentVote { user, score };
-                                        gc.vote_state.votes.push(vote);
-                                    }
-                                    None => {
-                                        return Err(format!(
-                                            "Failed to parse comment vote: {}",
-                                            "Invalid comment vote."
-                                        ));
-                                    }
-                                }
-                            }
-                            if let Some(more) = c7text.last() {
-                                match r_comment_vote_more.captures(&more) {
-                                    Some(caps) => {
-                                        let more = parse_to::<i64>(&caps[1])?;
-                                        gc.vote_state.more = more;
-                                    }
-                                    None => {}
-                                }
+                        }
+                        if let Some(more) = c7text.last() {
+                            if let Some(caps) = r_comment_vote_more.captures(more) {
+                                let more = parse_to::<i64>(&caps[1])?;
+                                gc.vote_state.more = more;
                             }
                         }
                     }
-                    None => {}
                 }
                 comments.push(gc);
             }

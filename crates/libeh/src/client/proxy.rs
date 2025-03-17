@@ -1,6 +1,6 @@
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{env, fmt};
 
 /// EhClient 代理
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,9 +40,9 @@ impl EhClientProxy {
     }
 }
 
-impl ToString for EhClientProxy {
+impl fmt::Display for EhClientProxy {
     /// 将 EhClientProxy 转换为 URL 字符串
-    fn to_string(&self) -> String {
-        format!("{}://{}:{}", self.protocol, self.host, self.port)
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}://{}:{}", self.protocol, self.host, self.port)
     }
 }

@@ -20,11 +20,9 @@ impl GIDListItem {
 }
 
 impl From<String> for GIDListItem {
-
     /// 从画廊 URL 字符串转换为画廊 ID 及其令牌
     fn from(value: String) -> Self {
-        const URL_PATTERN: &'static str =
-            r"^https://e[\-x]hentai.org/g/(?<gid>\d+)/(?<token>[a-f0-9]+)/?";
+        const URL_PATTERN: &str = r"^https://e[\-x]hentai.org/g/(?<gid>\d+)/(?<token>[a-f0-9]+)/?";
         let regex = regex::Regex::new(URL_PATTERN).unwrap();
         match regex.captures(&value) {
             Some(captures) => {
@@ -123,7 +121,7 @@ pub struct PageListItem(i64, String, i32);
 impl From<String> for PageListItem {
     /// 将包含画廊 ID、页面令牌和页号的 URL 字符串转换为请求数据
     fn from(value: String) -> Self {
-        const URL_PATTERN: &'static str =
+        const URL_PATTERN: &str =
             r"^https://e[\-x]hentai.org/s/(?<ptoken>[a-f0-9]+)/(?<gid>\d+)-(?<pnum>\d+)/?";
         let regex = regex::Regex::new(URL_PATTERN).unwrap();
         match regex.captures(&value) {

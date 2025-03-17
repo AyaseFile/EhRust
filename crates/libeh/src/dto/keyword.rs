@@ -35,23 +35,23 @@ pub enum Keyword {
     Uploader(String),
 }
 
-impl ToString for Keyword {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Keyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Keyword::Normal(keyword) => format!("\"{}\"", keyword),
-            Keyword::Language(keyword) => format!("l:\"{}$\"", keyword),
-            Keyword::Parody(keyword) => format!("p:\"{}$\"", keyword),
-            Keyword::Character(keyword) => format!("c:\"{}$\"", keyword),
-            Keyword::Artist(keyword) => format!("a:\"{}$\"", keyword),
-            Keyword::Cosplayer(keyword) => format!("cos:\"{}$\"", keyword),
-            Keyword::Group(keyword) => format!("g:\"{}$\"", keyword),
-            Keyword::Female(keyword) => format!("f:\"{}$\"", keyword),
-            Keyword::Male(keyword) => format!("m:\"{}$\"", keyword),
-            Keyword::Mixed(keyword) => format!("x:\"{}$\"", keyword),
-            Keyword::Other(keyword) => format!("o:\"{}$\"", keyword),
-            Keyword::Reclass(keyword) => format!("r:\"{}$\"", keyword),
-            Keyword::Temp(keyword) => format!("temp:\"{}$\"", keyword),
-            Keyword::Uploader(keyword) => format!("uploader:\"{}$\"", keyword),
+            Keyword::Normal(keyword) => write!(f, "\"{}\"", keyword),
+            Keyword::Language(keyword) => write!(f, "l:\"{}$\"", keyword),
+            Keyword::Parody(keyword) => write!(f, "p:\"{}$\"", keyword),
+            Keyword::Character(keyword) => write!(f, "c:\"{}$\"", keyword),
+            Keyword::Artist(keyword) => write!(f, "a:\"{}$\"", keyword),
+            Keyword::Cosplayer(keyword) => write!(f, "cos:\"{}$\"", keyword),
+            Keyword::Group(keyword) => write!(f, "g:\"{}$\"", keyword),
+            Keyword::Female(keyword) => write!(f, "f:\"{}$\"", keyword),
+            Keyword::Male(keyword) => write!(f, "m:\"{}$\"", keyword),
+            Keyword::Mixed(keyword) => write!(f, "x:\"{}$\"", keyword),
+            Keyword::Other(keyword) => write!(f, "o:\"{}$\"", keyword),
+            Keyword::Reclass(keyword) => write!(f, "r:\"{}$\"", keyword),
+            Keyword::Temp(keyword) => write!(f, "temp:\"{}$\"", keyword),
+            Keyword::Uploader(keyword) => write!(f, "uploader:\"{}$\"", keyword),
         }
     }
 }

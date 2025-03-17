@@ -53,39 +53,27 @@ impl SearchResult {
         let search_nav = if let Some(result) = result_search_nav.next() {
             result
         } else {
-            return Err(format!("Failed to parse search nav."));
+            return Err("Failed to parse search nav.".to_string());
         };
 
         let s = selector("#ufirst")?;
         if let Some(result) = search_nav.select(&s).next() {
-            search_result.first_href = match result.value().attr("href") {
-                Some(href) => Some(href.to_string()),
-                None => None,
-            };
+            search_result.first_href = result.value().attr("href").map(|href| href.to_string());
         }
 
         let s = selector("#uprev")?;
         if let Some(result) = search_nav.select(&s).next() {
-            search_result.prev_href = match result.value().attr("href") {
-                Some(href) => Some(href.to_string()),
-                None => None,
-            };
+            search_result.prev_href = result.value().attr("href").map(|href| href.to_string());
         }
 
         let s = selector("#unext")?;
         if let Some(result) = search_nav.select(&s).next() {
-            search_result.next_href = match result.value().attr("href") {
-                Some(href) => Some(href.to_string()),
-                None => None,
-            };
+            search_result.next_href = result.value().attr("href").map(|href| href.to_string());
         }
 
         let s = selector("#ulast")?;
         if let Some(result) = search_nav.select(&s).next() {
-            search_result.last_href = match result.value().attr("href") {
-                Some(href) => Some(href.to_string()),
-                None => None,
-            };
+            search_result.last_href = result.value().attr("href").map(|href| href.to_string());
         }
 
         let s = selector("table.itg")?;
@@ -122,7 +110,7 @@ impl SearchResult {
         let s = selector(".glink")?;
         let glink = match tr.select(&s).next() {
             Some(element) => element,
-            None => return Err(format!("")),
+            None => return Err(String::new()),
         };
         let text = text_content(glink.text());
         gi.title = text;
@@ -253,10 +241,7 @@ impl SearchResult {
         let posted_text = text_content(posted.text());
         gi.posted = parse_posted(&posted_text)?;
         if let Some(style) = posted.attr("style") {
-            gi.favorite_slot = match parse_favorite_slot(style) {
-                Ok(slot) => slot,
-                Err(_) => -1,
-            };
+            gi.favorite_slot = parse_favorite_slot(style).unwrap_or(-1);
         }
 
         // 提取评分

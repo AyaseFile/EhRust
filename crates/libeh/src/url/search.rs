@@ -99,7 +99,7 @@ impl SearchBuilder {
         let disabled = (self._category & u16::from(category)) == u16::from(category);
         // 如果已禁用，则去除该类别的标志位
         if disabled {
-            self._category = self._category & (1023 ^ u16::from(category));
+            self._category &= 1023 ^ u16::from(category);
         } else {
             // 如果未禁用，则设置该类别的标志位
             self._category |= u16::from(category);
@@ -151,7 +151,7 @@ impl SearchBuilder {
 
     /// 设置画廊的最低评分
     pub fn rating(mut self, rating: i8) -> SearchBuilder {
-        if rating >= 0 && rating <= 5 {
+        if (0..=5).contains(&rating) {
             self._advsearch.rating = rating;
         }
         self
@@ -312,6 +312,6 @@ mod tests {
             .enable_advanced_search()
             .add_keyword(Keyword::Female("living clothes".to_string()));
         let url = builder.build().unwrap();
-        println!("url: {}", url.to_string());
+        println!("url: {}", url);
     }
 }

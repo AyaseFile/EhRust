@@ -6,9 +6,9 @@ use crate::utils::{
     scraper::{parse_to, selector, text_content},
 };
 
-const PATTERN_TOTAL_PAGES: &'static str =
+const PATTERN_TOTAL_PAGES: &str =
     r"Showing ((\d+)(,\d+)*) - ((\d+)(,\d+)*) of (?<total>(\d+)(,\d+)*) images";
-const PATTERN_STYLE: &'static str =
+const PATTERN_STYLE: &str =
     r"background:transparent url\((?<url>[^\(\)]+)\) (?<x>-?\d+)(px)? (?<y>-?\d+)(px)?";
 
 /// GalleryPreview 结构体定义了一个画廊的预览信息
@@ -126,13 +126,13 @@ impl GalleryPreview {
                 Some(style) => style,
                 None => continue,
             };
-            let caps = match r.captures(&style) {
+            let caps = match r.captures(style) {
                 Some(caps) => caps,
                 None => continue,
             };
             let url = caps["url"].to_string();
-            let offset_x = parse_to::<i64>(&caps["x"].to_string())?;
-            let offset_y = parse_to::<i64>(&caps["y"].to_string())?;
+            let offset_x = parse_to::<i64>(&caps["x"])?;
+            let offset_y = parse_to::<i64>(&caps["y"])?;
             let link = match div.select(&s_a).next() {
                 Some(a) => a,
                 None => continue,

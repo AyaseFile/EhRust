@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fmt};
 
 use serde::{Deserialize, Serialize};
 
@@ -52,17 +52,18 @@ impl EhClientAuth {
     }
 }
 
-impl ToString for EhClientAuth {
+impl fmt::Display for EhClientAuth {
     /// 将 EhClientAuth 实例转换为字符串
-    fn to_string(&self) -> String {
-        let mut s = format!(
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
             "ipb_member_id={}&ipb_pass_hash={}",
             self.ipb_member_id, self.ipb_pass_hash
-        );
+        )?;
         if let Some(igneous) = &self.igneous {
-            s += &format!("&igneous={}", igneous);
+            write!(f, "&igneous={}", igneous)?;
         }
-        s
+        Ok(())
     }
 }
 

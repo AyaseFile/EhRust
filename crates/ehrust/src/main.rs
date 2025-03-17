@@ -34,8 +34,7 @@ async fn open_config() -> Result<EhClientConfig, Box<dyn std::error::Error>> {
         let conf: EhClientConfig = serde_yaml::from_reader(file)?;
         conf
     } else {
-        let conf = EhClientConfig::default();
-        conf
+        EhClientConfig::default()
     };
     Ok(config)
 }

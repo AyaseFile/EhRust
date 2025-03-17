@@ -5,10 +5,12 @@ use scraper::{Element, Html};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dto::{gallery::{
-        category::Category, comment::GalleryComment, info::GalleryInfo,
-        preview::GalleryPreview,
-    }, keyword::Keyword},
+    dto::{
+        gallery::{
+            category::Category, comment::GalleryComment, info::GalleryInfo, preview::GalleryPreview,
+        },
+        keyword::Keyword,
+    },
     url::gallery::GalleryBuilder,
     utils::{
         regex::regex,
@@ -16,43 +18,42 @@ use crate::{
     },
 };
 
-const PATTERN_ERROR: &'static str = r#"<div class="d">\n<p>([^<]+)</p>"#;
-const PATTERN_DETAIL: &'static str = r#"var gid = (?<gid>\d+);\s+?var token = "(?<token>[a-f0-9]+)";\s+?var apiuid = (?<apiuid>-?\d+);\s+?var apikey = "(?<apikey>[a-f0-9]+)";"#;
+const PATTERN_ERROR: &str = r#"<div class="d">\n<p>([^<]+)</p>"#;
+const PATTERN_DETAIL: &str = r#"var gid = (?<gid>\d+);\s+?var token = "(?<token>[a-f0-9]+)";\s+?var apiuid = (?<apiuid>-?\d+);\s+?var apikey = "(?<apikey>[a-f0-9]+)";"#;
 #[allow(dead_code)]
-const PATTERN_TORRENT: &'static str = r#"<a[^<>]*onclick="return popUp\('(?<link>[^']+)'[^)]+\)">Torrent Download \((<?count>\d+)\)</a>"#;
-const PATTERN_TORRENT_ONCLICK: &'static str = r#"return popUp\('(?<link>[^']+)'[^)]+\)"#;
-const PATTERN_TORRENT_COUNT: &'static str = r#"Torrent Download \((?<count>\d+)\)"#;
+const PATTERN_TORRENT: &str = r#"<a[^<>]*onclick="return popUp\('(?<link>[^']+)'[^)]+\)">Torrent Download \((<?count>\d+)\)</a>"#;
+const PATTERN_TORRENT_ONCLICK: &str = r#"return popUp\('(?<link>[^']+)'[^)]+\)"#;
+const PATTERN_TORRENT_COUNT: &str = r#"Torrent Download \((?<count>\d+)\)"#;
 #[allow(dead_code)]
-const PATTERN_ARCHIVE: &'static str =
+const PATTERN_ARCHIVE: &str =
     r#"<a[^<>]*onclick="return popUp\('([^']+)'[^)]+\)">Archive Download</a>"#;
-const PATTERN_ARCHIVE_ONCLICK: &'static str = r#"return popUp\('(?<link>[^']+)'[^)]+\)"#;
-const PATTERN_COVER: &'static str =
+const PATTERN_ARCHIVE_ONCLICK: &str = r#"return popUp\('(?<link>[^']+)'[^)]+\)"#;
+const PATTERN_COVER: &str =
     r#"width:(?<width>\d+)px; height:(?<height>\d+)px.+?url\((?<link>.+?)\)"#;
 #[allow(dead_code)]
-const PATTERN_TAG_GROUP: &'static str =
+const PATTERN_TAG_GROUP: &str =
     r#"<tr><td[^<>]+>([\w\s]+):</td><td>(?:<div[^<>]+><a[^<>]+>[\w\s]+</a></div>)+</td></tr>"#;
 #[allow(dead_code)]
-const PATTERN_TAG: &'static str = r#"<div[^<>]+><a[^<>]+>([\w\s]+)</a></div>"#;
+const PATTERN_TAG: &str = r#"<div[^<>]+><a[^<>]+>([\w\s]+)</a></div>"#;
 #[allow(dead_code)]
-const PATTERN_COMMENT: &'static str = r#"<div class=\"c3\">Posted on ([^<>]+) by: &nbsp; <a[^<>]+>([^<>]+)</a>.+?<div class=\"c6\"[^>]*>(.+?)</div><div class=\"c[78]\""#;
+const PATTERN_COMMENT: &str = r#"<div class=\"c3\">Posted on ([^<>]+) by: &nbsp; <a[^<>]+>([^<>]+)</a>.+?<div class=\"c6\"[^>]*>(.+?)</div><div class=\"c[78]\""#;
 #[allow(dead_code)]
-const PATTERN_PAGES: &'static str =
-    r#"<tr><td[^<>]*>Length:</td><td[^<>]*>([\\d,]+) pages</td></tr>"#;
-const PATTERN_PAGES_TEXT: &'static str = r"(?<length>\d+) pages";
-const PATTERN_FAVORITE_COUNT: &'static str = r"(?<count>\d+) times";
-const PATTERN_NEW_VERSION_DATETIME: &'static str = r"added (?<datetime>\d+-\d+-\d+ \d+:\d+)";
+const PATTERN_PAGES: &str = r#"<tr><td[^<>]*>Length:</td><td[^<>]*>([\\d,]+) pages</td></tr>"#;
+const PATTERN_PAGES_TEXT: &str = r"(?<length>\d+) pages";
+const PATTERN_FAVORITE_COUNT: &str = r"(?<count>\d+) times";
+const PATTERN_NEW_VERSION_DATETIME: &str = r"added (?<datetime>\d+-\d+-\d+ \d+:\d+)";
 #[allow(dead_code)]
-const PATTERN_PREVIEW_PAGES: &'static str =
+const PATTERN_PREVIEW_PAGES: &str =
     r#"<td[^>]+><a[^>]+>([\\d,]+)</a></td><td[^>]+>(?:<a[^>]+>)?&gt;(?:</a>)?</td>"#;
 #[allow(dead_code)]
-const PATTERN_NORMAL_PREVIEW: &'static str = r#"<div class=\"gdtm\"[^<>]*><div[^<>]*width:(\\d+)[^<>]*height:(\\d+)[^<>]*\\((.+?)\\)[^<>]*-(\\d+)px[^<>]*><a[^<>]*href=\"(.+?)\"[^<>]*><img alt=\"([\\d,]+)\""#;
+const PATTERN_NORMAL_PREVIEW: &str = r#"<div class=\"gdtm\"[^<>]*><div[^<>]*width:(\\d+)[^<>]*height:(\\d+)[^<>]*\\((.+?)\\)[^<>]*-(\\d+)px[^<>]*><a[^<>]*href=\"(.+?)\"[^<>]*><img alt=\"([\\d,]+)\""#;
 #[allow(dead_code)]
-const PATTERN_LARGE_PREVIEW: &'static str =
+const PATTERN_LARGE_PREVIEW: &str =
     r#"<div class=\"gdtl\".+?<a href=\"(.+?)\"><img alt=\"([\\d,]+)\".+?src=\"(.+?)\""#;
 
-const OFFENSIVE_STRING: &'static str =
+const OFFENSIVE_STRING: &str =
             "<p>(And if you choose to ignore this warning, you lose all rights to complain about it in the future.)</p>";
-const PINING_STRING: &'static str = "<p>This gallery is pining for the fjords.</p>";
+const PINING_STRING: &str = "<p>This gallery is pining for the fjords.</p>";
 
 /// 画廊详情，由画廊详情页面解析获得
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,7 +185,7 @@ impl GalleryDetail {
         if let Some(torrent_ele) = d.select(&s).next() {
             if let Some(link) = torrent_ele.attr("onclick") {
                 let r = regex(PATTERN_TORRENT_ONCLICK)?;
-                if let Some(caps) = r.captures(&link) {
+                if let Some(caps) = r.captures(link) {
                     let link = caps["link"].to_string();
                     gd.torrent_url = link;
                 }
@@ -202,7 +203,7 @@ impl GalleryDetail {
         if let Some(archive_ele) = d.select(&s).next() {
             if let Some(link) = archive_ele.attr("onclick") {
                 let r = regex(PATTERN_ARCHIVE_ONCLICK)?;
-                if let Some(caps) = r.captures(&link) {
+                if let Some(caps) = r.captures(link) {
                     let link = caps["link"].to_string();
                     gd.archive_url = link;
                 }
@@ -248,7 +249,7 @@ impl GalleryDetail {
         }
 
         // GalleryInfo
-        Self::parse_detail_info(gd, &d)?;
+        Self::parse_detail_info(gd, d)?;
 
         // Rating Count
         let s = selector("#rating_count")?;
@@ -264,7 +265,7 @@ impl GalleryDetail {
         if let Some(rating_ele) = d.select(&s).next() {
             let text = text_content(rating_ele.text());
             if let Some(value) = text.split(" ").last() {
-                if let Ok(value) = parse_to::<f32>(&value) {
+                if let Ok(value) = parse_to::<f32>(value) {
                     gd.info.rating = value;
                 }
             }
@@ -283,10 +284,10 @@ impl GalleryDetail {
         }
 
         // 解析画廊新版本
-        Self::parse_new_version(gd, &d)?;
+        Self::parse_new_version(gd, d)?;
 
         // 解析画廊标签
-        Self::parse_tag_groups(gd, &d)?;
+        Self::parse_tag_groups(gd, d)?;
 
         Ok(())
     }
@@ -347,10 +348,7 @@ impl GalleryDetail {
                         }
                         s if s.starts_with("Visible") => {
                             // 设置可见性
-                            gd.visible = match value_text.trim() {
-                                s if s.starts_with("Yes") => true,
-                                _ => false,
-                            }
+                            gd.visible = matches!(value_text.trim(), s if s.starts_with("Yes"))
                         }
                         s if s.starts_with("Language") => {
                             // 设置语言

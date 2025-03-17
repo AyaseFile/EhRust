@@ -142,7 +142,7 @@ mod tests {
         };
         let config = EhClientConfig {
             site: Site::Eh,
-            proxy: proxy,
+            proxy,
             auth: None,
         };
         let client = EhClient::new(config);
