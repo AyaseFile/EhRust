@@ -75,7 +75,6 @@ pub struct GalleryTorrent {
 pub struct GalleryMetadata {
     pub gid: i64,
     pub token: String,
-    pub archiver_key: String,
     pub title: String,
     pub title_jpn: String,
     pub category: String,
