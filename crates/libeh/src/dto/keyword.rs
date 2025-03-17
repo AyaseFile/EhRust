@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -35,8 +35,8 @@ pub enum Keyword {
     Uploader(String),
 }
 
-impl std::fmt::Display for Keyword {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Keyword {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Keyword::Normal(keyword) => write!(f, "\"{}\"", keyword),
             Keyword::Language(keyword) => write!(f, "l:\"{}$\"", keyword),
