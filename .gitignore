@@ -20,3 +20,5 @@ samples/
 /config.yml
 /config.json
 /.env
+
+.direnv
