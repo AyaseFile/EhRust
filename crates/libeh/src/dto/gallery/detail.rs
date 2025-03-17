@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use chrono::{DateTime, Utc};
+use reqwest::Url;
 use scraper::{Element, Html};
 use serde::{Deserialize, Serialize};
 
@@ -54,6 +55,31 @@ const PATTERN_LARGE_PREVIEW: &str =
 const OFFENSIVE_STRING: &str =
             "<p>(And if you choose to ignore this warning, you lose all rights to complain about it in the future.)</p>";
 const PINING_STRING: &str = "<p>This gallery is pining for the fjords.</p>";
+
+/// URL 类型枚举
+#[derive(Debug, Clone, Copy)]
+enum DownloadUrlType {
+    DownloadPage,
+    Download,
+}
+
+impl DownloadUrlType {
+    fn selector(&self) -> &str {
+        match self {
+            Self::DownloadPage => "#continue > a",
+            Self::Download => "#db > p > a",
+        }
+    }
+}
+
+impl fmt::Display for DownloadUrlType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::DownloadPage => write!(f, "Download page URL"),
+            Self::Download => write!(f, "Download URL"),
+        }
+    }
+}
 
 /// 画廊详情，由画廊详情页面解析获得
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -431,6 +457,76 @@ impl GalleryDetail {
             }
         }
         Ok(())
+    }
+
+    /// 下载画廊归档
+    pub async fn download_archive(
+        &self,
+        client: &crate::client::client::EhClient,
+        is_original: bool,
+    ) -> Result<Vec<u8>, String> {
+        if self.archive_url.is_empty() {
+            return Err("Archive link not found".into());
+        }
+
+        let archive_url =
+            Url::parse(&self.archive_url).map_err(|e| format!("Invalid archive URL: {}", e))?;
+
+        let form_data = vec![
+            ("dltype", if is_original { "org" } else { "res" }),
+            (
+                "dlcheck",
+                if is_original {
+                    "Download Original Archive"
+                } else {
+                    "Download Resample Archive"
+                },
+            ),
+        ];
+
+        let html = client.post_form(archive_url, form_data).await?;
+        let download_page_url_str = Self::parse_url(&html, DownloadUrlType::DownloadPage)?;
+        let download_page_url = Url::parse(&download_page_url_str)
+            .map_err(|e| format!("Invalid download page URL: {}", e))?;
+
+        let html = client.get_html(download_page_url.clone()).await?;
+        let raw_download_url = Self::parse_url(&html, DownloadUrlType::Download)?;
+
+        let download_url = if !raw_download_url.contains("://") {
+            let host = download_page_url
+                .host_str()
+                .ok_or("Missing host in download page URL")?;
+            format!(
+                "{}://{}{}",
+                download_page_url.scheme(),
+                host,
+                raw_download_url
+            )
+        } else {
+            raw_download_url
+        };
+
+        if !download_url.ends_with("start=1") {
+            return Err(format!("Invalid download URL: {}", download_url));
+        }
+
+        let final_url =
+            Url::parse(&download_url).map_err(|e| format!("Invalid final download URL: {}", e))?;
+
+        client.get_bytes(final_url).await
+    }
+
+    /// 从 HTML 中解析 URL
+    fn parse_url(html: &str, url_type: DownloadUrlType) -> Result<String, String> {
+        let document = scraper::Html::parse_document(html);
+        let selector = scraper::Selector::parse(url_type.selector()).unwrap();
+
+        document
+            .select(&selector)
+            .next()
+            .and_then(|element| element.value().attr("href"))
+            .map(String::from)
+            .ok_or(format!("{} not found", url_type))
     }
 }
 

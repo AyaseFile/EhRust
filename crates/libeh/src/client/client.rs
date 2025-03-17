@@ -121,6 +121,38 @@ impl EhClient {
         };
         Ok(json)
     }
+
+    /// 发送表单数据并获取响应文本
+    pub async fn post_form(
+        &self,
+        url: Url,
+        form_data: Vec<(&str, &str)>,
+    ) -> Result<String, String> {
+        let res = self.client.post(url).form(&form_data).send().await;
+        let res = match res {
+            Ok(res) => res,
+            Err(err) => return Err(format!("Error: {}", err)),
+        };
+        let text = match res.text().await {
+            Ok(text) => text,
+            Err(err) => return Err(format!("Error: {}", err)),
+        };
+        Ok(text)
+    }
+
+    /// 获取指定 URL 的二进制内容
+    pub async fn get_bytes(&self, url: Url) -> Result<Vec<u8>, String> {
+        let res: Result<reqwest::Response, reqwest::Error> = self.client.get(url).send().await;
+        let res = match res {
+            Ok(res) => res,
+            Err(err) => return Err(format!("Error: {}", err)),
+        };
+        let bytes = match res.bytes().await {
+            Ok(bytes) => bytes.to_vec(),
+            Err(err) => return Err(format!("Error: {}", err)),
+        };
+        Ok(bytes)
+    }
 }
 
 #[cfg(test)]
