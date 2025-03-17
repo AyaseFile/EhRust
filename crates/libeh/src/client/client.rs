@@ -29,7 +29,7 @@ impl EhClient {
             for (key, value) in auth_vec {
                 jar.add_cookie_str(&format!("{}={}", key, value), &config.site.into());
             }
-            println!("Cookie: {:?}", jar);
+            // println!("Cookie: {:?}", jar);
             builder = builder.cookie_store(true).cookie_provider(jar.into());
         }
 
