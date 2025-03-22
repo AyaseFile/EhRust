@@ -40,12 +40,13 @@
         in
         {
           default = mkShell {
-            buildInputs = [
+            nativeBuildInputs = [
               rust_toolchain
-              openssl
               pkg-config
             ];
-            LD_LIBRARY_PATH = lib.makeLibraryPath [ openssl ];
+            buildInputs = [
+              openssl
+            ];
             RUST_SRC_PATH = "${rust_toolchain}/lib/rustlib/src/rust/library";
           };
         }
