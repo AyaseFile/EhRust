@@ -1,7 +1,6 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Deserializer, Serializer};
 
-#[allow(dead_code)]
 pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

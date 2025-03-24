@@ -58,7 +58,7 @@ impl GalleryMetadataRequest {
 }
 
 /// 画廊种子数据
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GalleryTorrent {
     pub hash: String,
     #[serde(with = "parse_unix_timestamp_str")]
@@ -71,7 +71,7 @@ pub struct GalleryTorrent {
 }
 
 /// 画廊元数据，通过 API 请求获得
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GalleryMetadata {
     pub gid: i64,
     pub token: String,

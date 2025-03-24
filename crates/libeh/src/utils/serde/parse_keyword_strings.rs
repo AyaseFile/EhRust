@@ -2,13 +2,12 @@ use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serializer};
 
 use crate::dto::keyword::Keyword;
 
-#[allow(dead_code)]
-pub fn serialize<S>(keywords: Vec<Keyword>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(keywords: &Vec<Keyword>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     let mut seq = serializer.serialize_seq(Some(keywords.len()))?;
-    for keyword in &keywords {
+    for keyword in keywords {
         seq.serialize_element(&keyword.to_string())?;
     }
     seq.end()

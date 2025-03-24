@@ -1,7 +1,6 @@
 use serde::{Deserialize, Deserializer, Serializer};
 
-#[allow(dead_code)]
-pub fn serialize<S>(number: f32, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(number: &f32, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
