@@ -93,11 +93,13 @@ pub struct GalleryMetadata {
     pub torrents: Vec<GalleryTorrent>,
     #[serde(with = "parse_keyword_strings")]
     pub tags: Vec<Keyword>,
-    #[serde(with = "parse_option_int64_str")]
+    #[serde(default, with = "parse_option_int64_str")]
     pub parent_gid: Option<i64>,
+    #[serde(default)]
     pub parent_key: Option<String>,
-    #[serde(with = "parse_option_int64_str")]
+    #[serde(default, with = "parse_option_int64_str")]
     pub first_gid: Option<i64>,
+    #[serde(default)]
     pub first_key: Option<String>,
 }
 
