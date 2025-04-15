@@ -8,6 +8,7 @@ use crate::utils::{
 };
 
 const PATTERN_COMMENT_TIME: &str = r"Posted on (.+) by:";
+const PATTERN_COMMENT_TIME_DISOWNED: &str = r"Posted on (.+)";
 const PATTERN_COMMENT_ID: &str = r"comment_score_(\d+)";
 const PATTERN_COMMENT_VOTE_BASE: &str = r"Base ([\+\-]?\d+)";
 const PATTERN_COMMENT_VOTE: &str = r"(?<user>.+) (?<score>[\+\-]?\d+)$";
@@ -90,6 +91,7 @@ impl GalleryComment {
     /// 解析画廊评论
     pub fn parse(d: &Html) -> Result<Vec<GalleryComment>, String> {
         let r_comment_time = regex(PATTERN_COMMENT_TIME)?;
+        let r_comment_time_disowned = regex(PATTERN_COMMENT_TIME_DISOWNED)?;
         let r_comment_id = regex(PATTERN_COMMENT_ID)?;
         let r_comment_vote_base = regex(PATTERN_COMMENT_VOTE_BASE)?;
         let r_comment_vote = regex(PATTERN_COMMENT_VOTE)?;
@@ -106,7 +108,10 @@ impl GalleryComment {
                     Some(c3) => {
                         let text = text_content(c3.text());
                         // 解析评论发布时间
-                        gc.time = match r_comment_time.captures(&text) {
+                        gc.time = match r_comment_time
+                            .captures(&text)
+                            .or_else(|| r_comment_time_disowned.captures(&text))
+                        {
                             Some(caps) => Self::parse_comment_time(&caps[1])?,
                             None => {
                                 return Err(format!(
